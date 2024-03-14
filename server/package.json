@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "build": "npx tsc -w & nodemon dist/server.js",
+    "build": "npx tsc & nodemon dist/server.js",
     "dev": "nodemon src/server.ts"
   },
   "author": "Raj Gupta",

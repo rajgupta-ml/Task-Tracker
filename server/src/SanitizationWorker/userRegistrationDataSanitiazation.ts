@@ -4,7 +4,6 @@ import { userRegistrationInterface } from "../interfaces/userRegistrationInterfa
 const registrationSchema = z.object({
     userPhoneNumber: z.string().min(1),
     userPassword: z.string().min(8),
-    userConfirmPassword: z.string().min(8),
 });
 
 

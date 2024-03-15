@@ -23,3 +23,9 @@ export interface filterInterface{
 export interface taskDeletionInterface {
     task_id: number;
 }
+
+
+export interface returnStatusResult {
+    incomplete: number,
+    complete: number,
+}

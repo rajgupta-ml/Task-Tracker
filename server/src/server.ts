@@ -16,11 +16,13 @@ import cookieParser from 'cookie-parser';
 import { filterInterface, taskDataInterface, taskDeletionInterface, taskUpdationInterface } from './interfaces/taskDataInterface.js';
 import { getFilterDataSanitization, taskDataSanitization, taskDeletionSanitization, taskUpdationSanitization } from './SanitizationWorker/taskDataSanitization.js';
 import { jwtDecodePersistance } from './persistance/jwtEncodeDecodePersistance.js';
-import { taskCreationInteractor } from './Interactor/taskCreationInteractor.js';
+import { subTaskCreationInteractor, taskCreationInteractor } from './Interactor/taskCreationInteractor.js';
 import { taskUpdationInteractor } from './Interactor/taskUpdationInteractor.js';
 import { number } from 'zod';
 import { getFilterDataInteractor } from './Interactor/getFilterDataInteractor.js';
 import { taskDeletionInteractor } from './Interactor/taskDeletionInteractor.js';
+import { subTaskUpdationInteractor } from './Interactor/subTaskUpdationInteractor.js';
+import { subTaskDeletionInteractor } from './Interactor/subTaskDeletionInteractor.js';
 
 const app = express();
 let client: PoolClient;;
@@ -198,8 +200,8 @@ app.get("/api/task/:user_id", jwtDecodePersistance, async (req : Request, res : 
 
 // soft delete a task using task id
 // --- Validate the JWT token
-// --- Deleleted at coloum Date Default value nan
-// --- isDeleted at coloumn boolean Default value false
+// --- deleted_at chenage the timeStamp to currect time_stamp
+// --- isDeleted change the false to true
 
 
 app.delete("/api/task/:task_id", jwtDecodePersistance, async (req : Request, res : Response  ) => {
@@ -225,9 +227,92 @@ app.delete("/api/task/:task_id", jwtDecodePersistance, async (req : Request, res
 })
 
 
-// 
+// Create Sub-task using the task_id 
+// --- validate JWT
+// --- santize the task_id
+// --- Check if the task is present on the task_table
+// --- Create a sub stack with status = 0 and is_deleted = false
+// --- Return the sub-task id 
+
+app.post("/api/sub-task" , jwtDecodePersistance, async (req: Request, res : Response) => {
+    const {task_id} : taskDeletionInterface = req.body;
+    // Data sanitization using the task deletion Sanitization Function
+    const sanitizatedData = taskDeletionSanitization({task_id});
+
+    try {
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
+        const sub_task_id : number = await subTaskCreationInteractor(sanitizatedData, client);
+        (res as any).success(sub_task_id, "New Sub Task has been created");
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could not create a new sub-task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
+
+})
 
 
+// Updation of status using the sub_task_id 
+// -- Validate JWT 
+// -- Sanitize the sub_task_id
+// -- update the status in the subtask table
+// -- Run a worker on sub_task table and find the number of incomplete sub-task with the same task_id and update the status of table using the task_id
+// -- Send Success Response
+
+
+app.patch("/api/sub-task", jwtDecodePersistance, async(req: Request, res: Response) => {
+    const sub_task_id : number = req.body.sub_task_id;
+    const sanitizatedData : taskDeletionInterface = taskDeletionSanitization({task_id: sub_task_id});
+
+    try {
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
+
+        await subTaskUpdationInteractor(sanitizatedData, client);
+        (res as any).success(sub_task_id, "Status Updated");
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could not create a new sub-task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
+
+})
+
+
+// soft delete a sub-task using task id
+// --- Validate the JWT token
+// --- deleted_at chenage the timeStamp to currect time_stamp
+// --- isDeleted change the false to true
+
+app.delete("/api/sub-task/:sub_task_id", jwtDecodePersistance, async(req :Request, res : Response) => {
+    const task_id: number = parseInt(req.params.sub_task_id);
+    const sanitizatedData: taskDeletionInterface = taskDeletionSanitization({ task_id });
+    try {
+
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
+        // Calling the interactor
+        await subTaskDeletionInteractor(sanitizatedData,client);
+        (res as any).success(null, "The task has been successfully deleted", 200);
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could not delete the task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
+})
 
 app.listen(PORT, async () => {
     console.log(`The server is running on PORT: ${PORT}`);

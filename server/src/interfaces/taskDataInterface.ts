@@ -6,3 +6,8 @@ export interface taskDataInterface {
     priority? : number;
 }
 
+export interface taskUpdationInterface {
+    task_id : number;
+    status? : string;
+    due_date?: string;
+}

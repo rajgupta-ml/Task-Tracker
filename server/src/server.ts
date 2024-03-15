@@ -13,10 +13,11 @@ import { authInteractor } from './Interactor/authInteractor.js';
 import jwt from 'jsonwebtoken';
 import { userLoginDataResponeInterface } from './interfaces/userDataDBInterface.js';
 import cookieParser from 'cookie-parser';
-import { taskDataInterface } from './interfaces/taskDataInterface.js';
-import { taskDataSanitization } from './SanitizationWorker/taskDataSanitization.js';
+import { taskDataInterface, taskUpdationInterface } from './interfaces/taskDataInterface.js';
+import { taskDataSanitization, taskUpdationSanitization } from './SanitizationWorker/taskDataSanitization.js';
 import { jwtDecodePersistance } from './persistance/jwtEncodeDecodePersistance.js';
 import { taskCreationInteractor } from './Interactor/taskCreationInteractor.js';
+import { taskUpdationInteractor } from './Interactor/taskUpdationInteractor.js';
 
 const app = express();
 let client: PoolClient;;
@@ -129,9 +130,28 @@ app.post("/api/task", jwtDecodePersistance,  async(req: Request, res : Response)
 
 
 
-app.patch("/api/task", jwtDecodePersistance, (req : Request, res : Response) => {
-    // DATA SANITIZATION  
-    
+app.patch("/api/task", jwtDecodePersistance, async (req : Request, res : Response) => {
+
+    const taskUpdationData : taskUpdationInterface = req.body;
+    try {
+        // DATA SANITIZATION  
+        const SanitizedData: taskUpdationInterface = taskUpdationSanitization(taskUpdationData); 
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
+        // CALLING THE INTERACTOR 
+        await taskUpdationInteractor(SanitizedData, client);
+        (res as any).success(null, "Updation Succesfull");
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could Not update the task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
+
+
 })
 
 

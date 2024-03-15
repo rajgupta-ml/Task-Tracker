@@ -1,5 +1,5 @@
 import { PoolClient } from "pg";
-import { taskDataInterface } from "../interfaces/taskDataInterface.js";
+import { taskDataInterface, taskUpdationInterface } from "../interfaces/taskDataInterface.js";
 
 export const taskCreationPersistance  = async (task_data : taskDataInterface, client: PoolClient) : Promise<number> => {
     const tableCreation : string = `CREATE TABLE IF NOT EXISTS task (
@@ -55,6 +55,49 @@ export const priorityCheckerPersistance = (due_date: string): number => {
     } else {
         priority = 3;
     }
-
     return priority;
+}
+
+
+export const taskUpdationOnDBPersistance = async (task_data : taskUpdationInterface, client : PoolClient) => {
+
+    const {task_id, status, due_date} = task_data;
+    let updateQuery = `UPDATE task SET`;
+    const params = [];
+    let paramIndex = 1;
+
+    if (status) {
+        updateQuery += ` status = $${paramIndex++}`;
+        params.push(status);
+    }
+
+    if (due_date) {
+        if (status) {
+            updateQuery += `,`; // Add comma if both status and due_date are present
+        }
+        updateQuery += ` task_due_date = $${paramIndex++}`;
+        params.push(due_date);
+        const priority = priorityCheckerPersistance(due_date);
+        updateQuery += `, priority = $${paramIndex++}`;
+        params.push(priority);
+    }
+
+    updateQuery += `
+        WHERE task_id = $${paramIndex}
+        RETURNING task_id;
+    `;
+
+    params.push(task_id);
+
+    try {
+        await client.query('BEGIN');
+        await client.query(updateQuery, params);
+        await client.query('COMMIT');
+    } catch (error) {
+        console.error('Error inserting data:', error);
+        await client.query('ROLLBACK');
+        throw new Error('Error inserting data:', (error as any).message)
+    } finally{
+        // client.release();
+    }
 }

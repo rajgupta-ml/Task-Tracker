@@ -1,5 +1,5 @@
 import { PoolClient } from "pg";
-import { taskDataInterface, taskUpdationInterface } from "../interfaces/taskDataInterface.js";
+import { filterInterface, taskDataInterface, taskUpdationInterface } from "../interfaces/taskDataInterface.js";
 
 export const taskCreationPersistance  = async (task_data : taskDataInterface, client: PoolClient) : Promise<number> => {
     const tableCreation : string = `CREATE TABLE IF NOT EXISTS task (
@@ -29,12 +29,10 @@ export const taskCreationPersistance  = async (task_data : taskDataInterface, cl
         const {rows} = await client.query(insertQuery, [task_data.user_id, task_data.task_title, task_data.task_description, task_data.task_due_date, task_data.priority]);
         const task_id : number = rows[0].task_id;
         await client.query('COMMIT');
-        client.release();
         return task_id;
     } catch (error) {
         console.error('Error inserting data:', error);
         await client.query('ROLLBACK');
-        client.release();
         throw new Error('Error inserting data:', (error as any).message)
     }
 }
@@ -82,12 +80,14 @@ export const taskUpdationOnDBPersistance = async (task_data : taskUpdationInterf
         params.push(priority);
     }
 
+    updateQuery += `, update_at = CURRENT_TIMESTAMP`;
+
     updateQuery += `
         WHERE task_id = $${paramIndex}
         RETURNING task_id;
     `;
 
-    params.push(task_id);
+    params.push(task_id)
 
     try {
         await client.query('BEGIN');
@@ -97,7 +97,49 @@ export const taskUpdationOnDBPersistance = async (task_data : taskUpdationInterf
         console.error('Error inserting data:', error);
         await client.query('ROLLBACK');
         throw new Error('Error inserting data:', (error as any).message)
-    } finally{
-        // client.release();
     }
 }
+
+
+
+
+export const getFilterDataPersistance = async (filter: filterInterface, client : PoolClient) : Promise<object>=>{
+    let {priority, due_date, page, limit} = filter;
+    const {user_id} = filter;
+
+    // Construct the base SELECT query
+    let query = `SELECT * FROM task WHERE user_id = $1`;
+
+    // Initialize the parameters array with the user_id
+    const params = [user_id]; 
+    // Add filters to the query dynamically
+    if (priority !== undefined) {
+        query += ` AND priority = $${params.length + 1}`;
+        params.push(parseInt(priority));
+    }
+
+    if (due_date !== undefined) {
+        const new_due_date = new Date(due_date);
+        query += ` AND task_due_date = $${params.length + 1}`;
+        params.push(new_due_date as any);
+    }
+
+    // Add pagination
+    if(page !== undefined && limit !== undefined){
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        query += ` ORDER BY task_due_date ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(parseInt(limit), offset);
+    }
+
+
+     try {
+        const { rows } = await client.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error('Error fetching tasks:', error);
+        throw new Error('Error fetching tasks:', (error as any).message);
+    }
+
+} 
+
+

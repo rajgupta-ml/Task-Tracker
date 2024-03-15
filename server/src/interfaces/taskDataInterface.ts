@@ -11,3 +11,11 @@ export interface taskUpdationInterface {
     status? : string;
     due_date?: string;
 }
+
+export interface filterInterface{
+    user_id : number;
+    priority?: string;
+    due_date?: string;
+    page?: string;
+    limit?: string; 
+}

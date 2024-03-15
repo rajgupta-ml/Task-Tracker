@@ -13,11 +13,13 @@ import { authInteractor } from './Interactor/authInteractor.js';
 import jwt from 'jsonwebtoken';
 import { userLoginDataResponeInterface } from './interfaces/userDataDBInterface.js';
 import cookieParser from 'cookie-parser';
-import { taskDataInterface, taskUpdationInterface } from './interfaces/taskDataInterface.js';
-import { taskDataSanitization, taskUpdationSanitization } from './SanitizationWorker/taskDataSanitization.js';
+import { filterInterface, taskDataInterface, taskUpdationInterface } from './interfaces/taskDataInterface.js';
+import { getFilterDataSanitization, taskDataSanitization, taskUpdationSanitization } from './SanitizationWorker/taskDataSanitization.js';
 import { jwtDecodePersistance } from './persistance/jwtEncodeDecodePersistance.js';
 import { taskCreationInteractor } from './Interactor/taskCreationInteractor.js';
 import { taskUpdationInteractor } from './Interactor/taskUpdationInteractor.js';
+import { number } from 'zod';
+import { getFilterDataInteractor } from './Interactor/getFilterDataInteractor.js';
 
 const app = express();
 let client: PoolClient;;
@@ -152,6 +154,37 @@ app.patch("/api/task", jwtDecodePersistance, async (req : Request, res : Respons
     }
 
 
+})
+
+
+// Get All the user task using the filters(Priority, due_date and proper_pagination)
+// --- It will be get request with filter as a query parameter
+// --- Santize the query paramater 
+// --- Get the data from the database
+// --- CAN BE DONE Implement a caching mechanism to store the frequently requested task.
+ 
+
+app.get("/api/task/:user_id", jwtDecodePersistance, async (req : Request, res : Response) => {
+    const {user_id} = req.params;
+
+    try {
+        const filters: filterInterface = {
+            user_id: parseInt(user_id), ...req.query,
+        };
+        // Query Sanitization
+        const sanitizationData : filterInterface = getFilterDataSanitization(filters)
+        
+        // Get the data from the database
+        const data = await getFilterDataInteractor(sanitizationData, client);
+        (res as any).success(data, "The data is successfully reterieved", 200);
+
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could Not Get the task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
 })
 
 

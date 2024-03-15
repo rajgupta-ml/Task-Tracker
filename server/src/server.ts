@@ -13,13 +13,14 @@ import { authInteractor } from './Interactor/authInteractor.js';
 import jwt from 'jsonwebtoken';
 import { userLoginDataResponeInterface } from './interfaces/userDataDBInterface.js';
 import cookieParser from 'cookie-parser';
-import { filterInterface, taskDataInterface, taskUpdationInterface } from './interfaces/taskDataInterface.js';
-import { getFilterDataSanitization, taskDataSanitization, taskUpdationSanitization } from './SanitizationWorker/taskDataSanitization.js';
+import { filterInterface, taskDataInterface, taskDeletionInterface, taskUpdationInterface } from './interfaces/taskDataInterface.js';
+import { getFilterDataSanitization, taskDataSanitization, taskDeletionSanitization, taskUpdationSanitization } from './SanitizationWorker/taskDataSanitization.js';
 import { jwtDecodePersistance } from './persistance/jwtEncodeDecodePersistance.js';
 import { taskCreationInteractor } from './Interactor/taskCreationInteractor.js';
 import { taskUpdationInteractor } from './Interactor/taskUpdationInteractor.js';
 import { number } from 'zod';
 import { getFilterDataInteractor } from './Interactor/getFilterDataInteractor.js';
+import { taskDeletionInteractor } from './Interactor/taskDeletionInteractor.js';
 
 const app = express();
 let client: PoolClient;;
@@ -173,6 +174,11 @@ app.get("/api/task/:user_id", jwtDecodePersistance, async (req : Request, res : 
         };
         // Query Sanitization
         const sanitizationData : filterInterface = getFilterDataSanitization(filters)
+
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
         
         // Get the data from the database
         const data = await getFilterDataInteractor(sanitizationData, client);
@@ -187,6 +193,39 @@ app.get("/api/task/:user_id", jwtDecodePersistance, async (req : Request, res : 
     }
 })
 
+
+
+
+// soft delete a task using task id
+// --- Validate the JWT token
+// --- Deleleted at coloum Date Default value nan
+// --- isDeleted at coloumn boolean Default value false
+
+
+app.delete("/api/task/:task_id", jwtDecodePersistance, async (req : Request, res : Response  ) => {
+    const task_id: number = parseInt(req.params.task_id);
+    const sanitizatedData: taskDeletionInterface = taskDeletionSanitization({ task_id });
+    try {
+
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
+        // Calling the interactor
+        await taskDeletionInteractor(sanitizatedData,client);
+
+         (res as any).success(null, "The task has been successfully deleted", 200);
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could not delete the task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
+})
+
+
+// 
 
 
 

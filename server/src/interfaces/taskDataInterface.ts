@@ -19,3 +19,7 @@ export interface filterInterface{
     page?: string;
     limit?: string; 
 }
+
+export interface taskDeletionInterface {
+    task_id: number;
+}

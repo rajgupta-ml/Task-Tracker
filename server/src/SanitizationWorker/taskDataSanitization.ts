@@ -1,6 +1,6 @@
 import { ZodError, z } from "zod";
 
-import { filterInterface, taskDataInterface, taskUpdationInterface } from "../interfaces/taskDataInterface.js";
+import { filterInterface, taskDataInterface, taskDeletionInterface, taskUpdationInterface } from "../interfaces/taskDataInterface.js";
 
 const taskDataSchema = z.object({
     user_id: z.number(),
@@ -75,6 +75,29 @@ const filterSchema = z.object({
 export const getFilterDataSanitization = (filterData: filterInterface): filterInterface => {
     try {
         const requestBody: filterInterface = filterSchema.parse(filterData);
+        return requestBody;
+    } catch (error) {
+        if (error instanceof ZodError) {
+            // Throw a custom error with a status code
+            const errorMessage = error.errors.map(err => err.message).join(', ');
+            const validationError = new Error(`Invalid request body: ${errorMessage}`);
+            (validationError as any).status_code = 400;
+            throw validationError;
+        } else {
+            throw new Error("Unexpected error occurred during data validation");
+        }
+    }
+
+}
+
+const taskDeletionSchema = z.object({
+    task_id: z.number(),
+    
+});
+
+export const taskDeletionSanitization = (task_id: taskDeletionInterface): taskDeletionInterface => {
+    try {
+        const requestBody: taskDeletionInterface = taskDeletionSchema.parse(task_id);
         return requestBody;
     } catch (error) {
         if (error instanceof ZodError) {

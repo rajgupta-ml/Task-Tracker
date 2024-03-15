@@ -7,3 +7,15 @@ export const passwordEncryptionPersistance = async (password: string, bcrypt: an
         throw new Error("Failed to hash the password");
     }
 };
+
+
+
+export const passwordComparePersistance = async(password: string, userPasswword: string, bcrypt : any) => {
+   
+    try {
+        await bcrypt.compare(password, userPasswword);
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}

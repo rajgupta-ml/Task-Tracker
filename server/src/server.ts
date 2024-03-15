@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, response } from 'express';
 import cors from 'cors';
 import 'dotenv/config'
 import bodyParser from 'body-parser';
@@ -10,6 +10,10 @@ import { PoolClient } from 'pg';
 import bcrypt from 'bcrypt';
 import { responseHandler } from './middleware/responseHandler.js';
 import { authInteractor } from './Interactor/authInteractor.js';
+import jwt from 'jsonwebtoken';
+import { userLoginDataResponeInterface } from './interfaces/userDataDBInterface.js';
+import { AssertionError } from 'assert';
+import { taskDataInterface } from './interfaces/taskDataInterface.js';
 
 const app = express();
 let client: PoolClient;;
@@ -54,14 +58,36 @@ app.post("/api/auth/login", async(request : Request, response : Response) => {
 
     try {
         // The bussiness logic to verify the user and create a JWT token.
-        const jwt = await authInteractor(SantizedUserDetails, client, bcrypt);
-        
-        (response as any).success({jwt}, "User authenticated successfully");
+        const responesData : userLoginDataResponeInterface = await authInteractor(SantizedUserDetails, client, bcrypt, jwt);
+        (response as any).success(responesData, "User authenticated successfully");
     } catch (error) {
         (response as any).error("Unauthorized", 401);
     }
+})
 
 
+// The user can createTask
+ 
+
+// creating the Main task for the user
+
+app.post("/api/task", async(req: Request, ress : Response) => {
+
+
+    const taskData : taskDataInterface = req.body;
+
+
+    try {
+        
+    } catch (error) {
+        
+        (response as any).error("Cannot Create Task");
+    }
+    // data sanitization 
+
+    // JWT verfication 
+
+    // Calling the interactor
 })
 
 

@@ -4,11 +4,12 @@ const { Pool } = pkg;
 export class DatabaseConnection {
     pool;
     constructor() {
+        console.log(process.env.PASSWORD);
         this.pool = new Pool({
             user: process.env.USER,
             host: process.env.HOST,
             database: process.env.DB,
-            password: process.env.PASSWORD,
+            password: (process.env.PASSWORD)?.toString(),
             port: parseInt(process.env.DB_PORT as any),
         });
     }

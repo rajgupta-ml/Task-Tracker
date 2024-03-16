@@ -214,7 +214,7 @@ export const subTaskCreationPersistance = async (data : taskDeletionInterface, c
 
 
 export const subTaskUpdationPersistance = async (data : taskDeletionInterface, client : PoolClient): Promise<number> => {
-    const task_id : number = data.task_id;
+    const task_id : number | undefined= data.task_id;
     const updationQuery = 
     `
     UPDATE subtask 
@@ -246,7 +246,7 @@ export const subTaskUpdationPersistance = async (data : taskDeletionInterface, c
 
 
 export const getSubTaskWithSameTaskId = async (data: taskDeletionInterface, client : PoolClient): Promise<returnStatusResult> => {
-    const task_id : number = data.task_id;
+    const task_id : number | undefined = data.task_id;
     const selectQuery = `
         SELECT * from subtask WHERE father_id = $1 AND status = $2
     `
@@ -271,7 +271,7 @@ export const getSubTaskWithSameTaskId = async (data: taskDeletionInterface, clie
 
 export const subTaskDeletionPersistance = async(data: taskDeletionInterface, client: PoolClient, taskDeletionCommand : boolean) => {
     let deletionQuery;
-    const task_id : number = data.task_id;
+    const task_id : number | undefined = data.task_id;
     if(taskDeletionCommand) deletionQuery = "UPDATE subtask set is_deleted = $1, deleted_at = CURRENT_TIMESTAMP WHERE father_id = $2";
     else deletionQuery = "UPDATE subtask set is_deleted = $1, deleted_at = CURRENT_TIMESTAMP WHERE task_id = $2";
 
@@ -279,6 +279,23 @@ export const subTaskDeletionPersistance = async(data: taskDeletionInterface, cli
         await client.query('BEGIN');
         await client.query(deletionQuery, [true, task_id]);
         await client.query('COMMIT');
+    } catch (error) {
+        console.error('Error deleting the data:', error);
+        await client.query('ROLLBACK');
+        throw new Error('Error deleting the data:', (error as any).message);
+    }
+}   
+
+
+export const getFilteredSubTaskPersistance = async(data: taskDeletionInterface, client: PoolClient) : Promise<object> => {
+    const deletionQuery = 'SELECT * from subtask WHERE is_deleted = $1 AND father_id = $2';
+    const task_id = data.task_id;
+ 
+    try {
+        await client.query('BEGIN');
+        const {rows} = await client.query(deletionQuery, [false, task_id]);
+        await client.query('COMMIT');
+        return rows;
     } catch (error) {
         console.error('Error deleting the data:', error);
         await client.query('ROLLBACK');

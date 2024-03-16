@@ -1,5 +1,6 @@
 import express, { Request, Response, response } from 'express';
 import cors from 'cors';
+import cron from 'node-cron'
 import 'dotenv/config'
 import bodyParser from 'body-parser';
 import { registrationInteractor } from './Interactor/registrationInteractor.js';
@@ -18,11 +19,13 @@ import { getFilterDataSanitization, taskDataSanitization, taskDeletionSanitizati
 import { jwtDecodePersistance } from './persistance/jwtEncodeDecodePersistance.js';
 import { subTaskCreationInteractor, taskCreationInteractor } from './Interactor/taskCreationInteractor.js';
 import { taskUpdationInteractor } from './Interactor/taskUpdationInteractor.js';
-import { number } from 'zod';
 import { getFilterDataInteractor } from './Interactor/getFilterDataInteractor.js';
 import { taskDeletionInteractor } from './Interactor/taskDeletionInteractor.js';
 import { subTaskUpdationInteractor } from './Interactor/subTaskUpdationInteractor.js';
 import { subTaskDeletionInteractor } from './Interactor/subTaskDeletionInteractor.js';
+import { getFilteredSubTaskInteractor } from './Interactor/getFilteredSubTaskInteractor.js';
+import { cronTaskPriorityUpdateInteractor } from './Interactor/cronTaskPriorityUpdateInteractor.js';
+import { cronTaskTwiloInteractor } from './Interactor/cronTaskTwiloInteractor.js';
 
 const app = express();
 let client: PoolClient;;
@@ -257,6 +260,32 @@ app.post("/api/sub-task" , jwtDecodePersistance, async (req: Request, res : Resp
 })
 
 
+app.get("/api/sub-task/:task_id", jwtDecodePersistance, async (req : Request, res : Response) => {
+    const task_id = parseInt(req.params.task_id);
+    // Query Sanitization
+    const sanitizationData : taskDeletionInterface = taskDeletionSanitization({task_id})
+
+    try {
+        if(!client) {
+            (res as any).error('Database client is not available. ', 500);
+            return;
+        }
+        
+        // Get the data from the database
+        const data = await getFilteredSubTaskInteractor(sanitizationData, client);
+        (res as any).success(data, "The data is successfully reterieved", 200);
+
+    } catch (error) {
+        if(error instanceof Error){
+            (res as any).error("Could Not Get the task", 400, (error as any).message);
+        }else{
+            (res as any).error("Internal Error Error");
+        }
+    }
+})
+
+
+
 // Updation of status using the sub_task_id 
 // -- Validate JWT 
 // -- Sanitize the sub_task_id
@@ -314,6 +343,31 @@ app.delete("/api/sub-task/:sub_task_id", jwtDecodePersistance, async(req :Reques
     }
 })
 
+
+const cronForPriority = () => {
+        const task = cron.schedule('* * * * *', async () => {
+            // For jobs to run every day, make the cron 0 0 * * *
+            await cronTaskPriorityUpdateInteractor(client);
+            console.log("Priority has been updated");
+        });
+
+        task.start()
+} 
+
+
+const cronForTwilo = () => {
+    const task = cron.schedule('* * * * *', async () => {
+        await cronTaskTwiloInteractor(client);
+        console.log("The call has been made");
+    })
+
+
+    task.start();
+
+}
+
+// cronForPriority();
+// cronForTwilo();
 app.listen(PORT, async () => {
     console.log(`The server is running on PORT: ${PORT}`);
     try {

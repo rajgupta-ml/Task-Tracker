@@ -4,7 +4,8 @@ export const registerUserInDB = async (client: PoolClient, phone_number: string,
     const query = `CREATE TABLE IF NOT EXISTS users (
         user_id SERIAL PRIMARY KEY,
         phone_number VARCHAR(255) UNIQUE,
-        password VARCHAR(255)
+        password VARCHAR(255),
+        priority INT NOT NULL DEFAULT -1
     );
     `
 

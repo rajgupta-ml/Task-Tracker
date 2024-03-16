@@ -21,7 +21,7 @@ export interface filterInterface{
 }
 
 export interface taskDeletionInterface {
-    task_id: number;
+    task_id: number ;
 }
 
 

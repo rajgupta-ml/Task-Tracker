@@ -1,8 +1,4 @@
 
-# Task Tracker API Documentation
-
-The Task Tracker API provides endpoints for user registration, authentication, task management, sub-task management, and cron job scheduling. This document outlines the available endpoints along with their functionalities.
-
 
 # Task Tracker API Documentation
 
@@ -210,4 +206,16 @@ Install my-project with npm
   npm i 
   npm run build
 ```
-    
+
+## Improvement which can be done in codebase
+
+//--- Separating the cron function onto a different Node.js server
+//--- Calling the interactors through a controller
+//--- Creating type interfaces for the response
+//--- Writing unit tests for each API endpoint using Jest
+//--- Logging all errors to the PostgreSQL table
+
+
+
+
+

@@ -182,10 +182,6 @@ The Task Tracker API provides endpoints for user registration, authentication, t
 
 To run this project, you will need to add the following environment variables to your .env file
 
-`API_KEY`
-
-`ANOTHER_API_KEY`
-
 PORT = "PORT FOR SERVER"
 USER = "DB_USER"
 HOST = "DB_HOST"
@@ -196,9 +192,9 @@ NODE_ENV = 'development'
 SECRET = 'JWTSECERT'
 TWILIO_ACCOUNT_SID = ""
 TWILIO_AUTH_TOKEN = ""
-## Installation
 
-Install my-project with npm
+
+## Installation
 
 ```bash
   git clone https://github.com/rajgupta-ml/Task-Tracker.git
@@ -207,13 +203,13 @@ Install my-project with npm
   npm run build
 ```
 
-## Improvement which can be done in codebase
+## This project is aimed at improving the codebase by implementing several enhancements. The enhancements include:
 
-//--- Separating the cron function onto a different Node.js server
-//--- Calling the interactors through a controller
-//--- Creating type interfaces for the response
-//--- Writing unit tests for each API endpoint using Jest
-//--- Logging all errors to the PostgreSQL table
+- Separating the cron function onto a different Node.js server
+- Calling the interactors through a controller
+- Creating type interfaces for the response
+- Writing unit tests for each API endpoint using Jest
+- Logging all errors to the PostgreSQL table
 
 
 
